@@ -57,4 +57,4 @@ ClubMan 是一个用于俱乐部管理的Web应用程序，旨在帮助俱乐部
 5. 打开一个 Pull Request
 
 ## 许可证
-本项目采用 MIT 许可证。请参阅 [LICENSE](LICENSE) 文件获取更多信息。
+本项目采用 MIT 许可证。请参阅 [LICENSE](LICENSE.txt) 文件获取更多信息。
