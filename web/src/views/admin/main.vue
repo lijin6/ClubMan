@@ -23,6 +23,10 @@
             <database-outlined />
             <span>社团管理</span>
           </a-menu-item>
+          <a-menu-item key="activity_management">
+            <database-outlined />
+            <span>活动管理</span>
+          </a-menu-item>
           <a-menu-item key="classification">
             <layout-outlined />
             <span>服务分类</span>

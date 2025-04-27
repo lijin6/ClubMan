@@ -7,3 +7,4 @@ from myapp.views.index.order import *
 from myapp.views.index.notice import *
 from myapp.views.index.address import *
 from myapp.views.index.assist import *
+from myapp.views.index.activity import *

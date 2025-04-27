@@ -4,7 +4,7 @@ import root from './root';
 import { ADMIN_USER_TOKEN, USER_TOKEN } from '/@/store/constants';
 
 // 路由权限白名单
-const allowList = ['adminLogin', 'login', 'register', 'portal', 'search', 'detail', '403', '404'];
+const allowList = ['adminLogin', 'login', 'register', 'portal', 'search', 'detail', '403', '404','activity'];
 // 前台登录地址
 const loginRoutePath = '/index/login';
 // 后台登录地址

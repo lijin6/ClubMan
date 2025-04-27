@@ -7,7 +7,15 @@
       <img :src="SearchIcon" class="search-icon" />
       <input placeholder="输入关键词" ref="keywordRef" @keyup.enter="search" />
     </div>
+
+
+    
+
+
     <div class="right-view">
+      
+      <a href="/index/activity"  type="a-link" style="line-height: 40px; width: 80px">活动公告</a>
+
       <a href="/admin" target="__black" type="a-link" style="line-height: 40px; width: 80px">后台入口</a>
       <template v-if="userStore.user_token">
         <a-dropdown>
@@ -73,7 +81,7 @@
   import AvatarIcon from '/@/assets/images/avatar.jpg';
   import MessageIcon from '/@/assets/images/message-icon.svg';
   import { message } from 'ant-design-vue';
-
+ 
   const router = useRouter();
   const route = useRoute();
   const userStore = useUserStore();

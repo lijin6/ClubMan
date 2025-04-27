@@ -1,214 +1,281 @@
 <template>
-  <a-spin :spinning="showSpin">
-    <div class="chat-container">
-      <h2 class="chat-title">AI辅助活动策划</h2>
-      <div class="chat-box">
-        <div v-for="(msg, index) in chatHistory" :key="index" class="chat-message">
-          <div v-if="msg.role === 'user'" class="user-message">
-            <div class="message-bubble user-bubble">
-              <p>{{ msg.content }}</p>
-            </div>
-          </div>
-          <div v-if="msg.role === 'assistant'" class="assistant-message">
-            <div class="message-bubble assistant-bubble">
-              <p>{{ msg.content }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="input-container">
-        <a-input
-          v-model="userMessage"
-          placeholder="请输入您的问题"
-          @pressEnter="sendMessage"
-          :disabled="showSpin"
-          class="chat-input"
-        />
-        <a-button
-          type="primary"
-          @click="sendMessage"
-          :disabled="showSpin || !userMessage.trim()"
-          class="send-button"
-        >
-          发送
-        </a-button>
+  <div class="chat-container">
+    <h1>活动策划助手</h1>
+    <div class="chat-box" ref="chatBox">
+      <div v-for="(message, index) in chatHistory" :key="index" :class="['message', message.role]">
+        <strong>{{ message.role === 'user' ? '你' : '助手' }}:</strong>
+        <p>
+          <span v-if="message.role === 'assistant' && !message.isComplete" class="typing-cursor">|</span>
+          <span v-html="message.displayContent || markedContent(message.content)"></span>
+        </p>
       </div>
     </div>
-  </a-spin>
+    <div class="input-box">
+      <input
+        v-model="userInput"
+        @keyup.enter="sendMessage"
+        placeholder="请输入你的问题或请求..."
+      />
+      <button @click="sendMessage">发送</button>
+    </div>
+  </div>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue';
-import OpenAI from 'openai';
+<script>
+import OpenAI from "openai";
+import { marked } from "marked"; // 使用命名导出
 
-// 定义消息类型
-interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
-
-// 定义状态
-const showSpin = ref(false); // 控制加载状态
-const userMessage = ref(''); // 用户输入的消息
-const chatHistory = ref<ChatMessage[]>([]); // 聊天记录
-
-// 初始化 OpenAI 客户端
-const openai = new OpenAI({
-  baseURL: 'https://api.deepseek.com', // DeepSeek API 地址
-  apiKey: 'sk-6a593b0defd94aa2b3e4402d3fb20997', // 替换为你的 DeepSeek API 密钥
-  dangerouslyAllowBrowser: true, // 允许在浏览器中使用
-});
-
-// 发送消息函数
-const sendMessage = async () => {
-  const message = userMessage.value.trim();
-  if (!message) return; // 如果消息为空，直接返回
-
-  showSpin.value = true; // 显示加载状态
-  chatHistory.value.push({ role: 'user', content: message }); // 将用户消息添加到聊天记录
-
-  try {
-    // 调用 DeepSeek API
-    const completion = await openai.chat.completions.create({
-      messages: [
-        { role: 'system', content: 'You are a helpful assistant.' }, // 系统提示
-        ...chatHistory.value.map((msg) => ({ role: msg.role, content: msg.content })), // 历史消息
-      ],
-      model: 'deepseek-chat', // 使用的模型
+export default {
+  data() {
+    return {
+      userInput: "",
+      chatHistory: [],
+      openai: null,
+    };
+  },
+  created() {
+    // 初始化 OpenAI 客户端
+    this.openai = new OpenAI({
+      
+      apiKey: "sk-328f437af70448b4b6a32a2e8a72f9c4", // 替换为你的 API Key
+      baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      dangerouslyAllowBrowser: true,
     });
 
-    // 处理 DeepSeek 的响应
-    if (completion.choices && completion.choices.length > 0) {
-      const aiReply = completion.choices[0].message.content; // 获取 AI 的回复
-      chatHistory.value.push({ role: 'assistant', content: aiReply }); // 将 AI 回复添加到聊天记录
-    } else {
-      chatHistory.value.push({ role: 'assistant', content: '抱歉，我没有理解您的问题。' }); // 处理空回复
-    }
-  } catch (error) {
-    console.error('请求失败:', error);
-    chatHistory.value.push({ role: 'assistant', content: '发生了错误，请稍后再试。' }); // 处理错误
-  } finally {
-    showSpin.value = false; // 隐藏加载状态
-    userMessage.value = ''; // 清空输入框
-  }
+    // 自动发送第一条消息
+    this.chatHistory.push({
+      role: "assistant",
+      content: "# 我是你的社团智能助手\n你可以问我任何关于活动策划的问题！",
+      isComplete: true, // 标记为完整消息
+    });
+  },
+  methods: {
+    async sendMessage() {
+      if (!this.userInput.trim()) return;
+
+      // 将用户输入添加到聊天记录中
+      this.chatHistory.push({ role: "user", content: this.userInput });
+
+      try {
+        let fullReply = "";
+
+        const completion = await this.openai.chat.completions.create({
+          model: "qwen-omni-turbo",
+          messages: [
+            { role: "system", content: "You are a helpful assistant." },
+            ...this.chatHistory
+              .slice(-5) // 只保留最近 5 条消息
+              .filter((msg) => msg.content && msg.content.trim() !== "") // 过滤掉无效消息
+              .map((msg) => ({
+                role: msg.role,
+                content: msg.content, // 确保只传递纯文本内容
+              })),
+            { role: "user", content: this.userInput },
+          ],
+          stream: true, // 启用流式传输
+          stream_options: {
+            include_usage: true,
+          },
+          modalities: ["text"],
+        });
+
+        // 创建一个临时的助手消息对象用于显示
+        const assistantMessage = { role: "assistant", content: "", displayContent: "", isComplete: false };
+        this.chatHistory.push(assistantMessage);
+
+        for await (const chunk of completion) {
+          if (Array.isArray(chunk.choices) && chunk.choices.length > 0) {
+            const delta = chunk.choices[0].delta?.content || "";
+            fullReply += delta;
+
+            // 动态更新助手消息的显示内容（逐字显示）
+            assistantMessage.displayContent = this.markedContent(fullReply);
+          } else {
+            console.log(chunk.usage); // 打印使用情况
+          }
+        }
+
+        // 流式传输完成后，标记消息为完整
+        assistantMessage.isComplete = true;
+        assistantMessage.content = fullReply;
+      } catch (error) {
+        console.error("Error communicating with the API:", error);
+        if (error.response) {
+          console.error("Response data:", error.response.data);
+          console.error("Response status:", error.response.status);
+        }
+        this.chatHistory.push({
+          role: "assistant",
+          content: "抱歉，我无法处理你的请求，请稍后再试。",
+          isComplete: true,
+        });
+      }
+
+      // 清空输入框
+      this.userInput = "";
+
+      // 滚动到底部
+      this.$nextTick(() => {
+        this.$refs.chatBox.scrollTop = this.$refs.chatBox.scrollHeight;
+      });
+    },
+    markedContent(content) {
+      // 使用 marked 库将 Markdown 转换为 HTML
+      return marked.parse(content || "");
+    },
+  },
 };
 </script>
 
-<style lang="less" scoped>
+<style scoped>
+/* 全局样式 */
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8fafc;
+}
+
+/* 主容器 */
 .chat-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 100%;
-  max-width: 700px;
-  margin: auto;
-  padding: 30px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-width: 900px; /* 增加宽度 */
+  height: auto;
+  margin: 20px auto;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #ffffff, #eef2ff);
+  animation: fadeIn 0.5s ease-in-out;
 }
 
-.chat-title {
+/* 标题 */
+h1 {
   text-align: center;
-  font-size: 24px;
-  font-weight: bold;
-  color: #1890ff;
+  color: #4a5568;
   margin-bottom: 20px;
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 1px;
 }
 
+/* 聊天框 */
 .chat-box {
-  overflow-y: auto;
-  height: 400px; /* 增加高度 */
-  margin-bottom: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
   padding: 15px;
-  background-color: #f9fafb;
-  border-radius: 8px;
-  border: 1px solid #e8e8e8;
+  height: 500px; /* 增加高度 */
+  overflow-y: auto;
+  background-color: #ffffff;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+  scroll-behavior: smooth;
 }
 
-.chat-message {
+/* 自定义滚动条 */
+.chat-box::-webkit-scrollbar {
+  width: 8px;
+}
+.chat-box::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 10px;
+}
+.chat-box::-webkit-scrollbar-track {
+  background: #f7fafc;
+}
+
+/* 消息样式 */
+.message {
   margin-bottom: 15px;
-  animation: fadeIn 0.3s ease-in-out;
+  padding: 10px;
+  border-radius: 8px;
+  transition: transform 0.2s ease-in-out;
+}
+.message:hover {
+  transform: scale(1.02);
 }
 
+.message.user {
+  text-align: right;
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  align-self: flex-end;
+}
+
+.message.assistant {
+  text-align: left;
+  color: #333;
+  background: #f1f5f9;
+  align-self: flex-start;
+}
+
+.message p {
+  line-height: 1.6;
+  margin: 0;
+  word-break: break-word;
+  position: relative;
+}
+
+/* 文字逐字显示动画 */
+.typing-cursor {
+  animation: blink-caret 0.75s step-end infinite;
+  margin-left: 2px;
+}
+
+@keyframes blink-caret {
+  from, to {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* 输入框 */
+.input-box {
+  display: flex;
+  margin-top: 20px;
+}
+
+.input-box input {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #cbd5e0;
+  border-radius: 8px;
+  margin-right: 10px;
+  font-size: 16px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.input-box input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
+  outline: none;
+}
+
+.input-box button {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+.input-box button:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: scale(1.05);
+}
+.input-box button:active {
+  transform: scale(0.98);
+}
+
+/* 动画效果 */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(-10px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.message-bubble {
-  display: inline-block;
-  max-width: 80%;
-  padding: 12px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  line-height: 1.5;
-  word-wrap: break-word;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.user-bubble {
-  background-color: #1890ff;
-  color: #ffffff;
-  text-align: left;
-  border-radius: 20px 20px 0 20px;
-}
-
-.assistant-bubble {
-  background-color: #f0f5ff;
-  color: #1890ff;
-  text-align: right;
-  border-radius: 20px 20px 20px 0;
-}
-
-.input-container {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-  align-items: center; /* 确保输入框和按钮垂直居中 */
-}
-
-.chat-input {
-  flex-grow: 1;
-  border-radius: 30px;
-  background-color: #f5f8fd;
-  border: 1px solid #e8e8e8;
-  padding: 10px 16px;
-  height: 40px; /* 设置固定高度 */
-  line-height: 40px; /* 确保文本垂直居中 */
-}
-
-.send-button {
-  border-radius: 30px;
-  padding: 0 20px; /* 调整内边距 */
-  height: 40px; /* 设置与输入框相同的高度 */
-  background-color: #1890ff;
-  color: #ffffff;
-  border: none;
-  transition: background-color 0.3s ease;
-  display: flex;
-  align-items: center; /* 确保按钮内容垂直居中 */
-  justify-content: center; /* 确保按钮内容水平居中 */
-}
-
-.send-button:hover {
-  background-color: #40a9ff;
-}
-
-.a-input,
-.a-button {
-  font-size: 14px;
-}
-
-.a-spin {
-  display: flex;
-  justify-content: center;
 }
 </style>

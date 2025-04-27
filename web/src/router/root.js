@@ -45,6 +45,17 @@ const constantRouterMap = [
         name: 'search',
         component: () => import('/@/views/index/search.vue'),
       },
+
+      {
+        path: 'activity',
+        name: 'activity',
+        component: () => import('/@/views/index/Activity.vue'),
+        meta: { 
+          title: '活动公告',
+          requiresAuth: false
+        }
+      },
+
       {
         path: 'usercenter',
         name: 'usercenter',
@@ -120,7 +131,7 @@ const constantRouterMap = [
       },
     ],
   },
-  
+
   {
     path: '/adminLogin',
     name: 'adminLogin',
@@ -135,6 +146,7 @@ const constantRouterMap = [
       { path: 'overview', name: 'overview', component: () => import('/@/views/admin/overview.vue') },
       { path: 'order', name: 'order', component: () => import('/@/views/admin/order.vue') },
       { path: 'thing', name: 'thing', component: () => import('/@/views/admin/thing.vue') },
+      { path: 'activity', name: 'activity_management', component: () => import('/@/views/admin/activity.vue') },
       { path: 'comment', name: 'comment', component: () => import('/@/views/admin/comment.vue') },
       { path: 'user', name: 'user', component: () => import('/@/views/admin/user.vue') },
       { path: 'classification', name: 'classification', component: () => import('/@/views/admin/classification.vue') },

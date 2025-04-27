@@ -12,5 +12,7 @@ from myapp.views.admin.errorLog import *
 from myapp.views.admin.banner import *
 from myapp.views.admin.ad import *
 from myapp.views.admin.notice import *
-
 from myapp.views.admin.Aiassist import *
+
+from myapp.views.admin.models import *
+from myapp.views.admin.activity import *

@@ -60,10 +60,14 @@ urlpatterns = [
     path('admin/user/delete', views.admin.user.delete),
     path('admin/user/info', views.admin.user.info),
     path('admin/adminLogin', views.admin.user.admin_login),
+
+    path('admin/activities/', views.admin.activity.admin_activity_list),
+    path('admin/activities/<int:activity_id>/', views.admin.activity.admin_activity_detail),
     
-    path('admin/generate-event-plan/', views.admin.Aiassist.generate_event_plan_view, name='generate_event_plan'),
-
-
+    path('admin/activities/<int:activity_id>/status/', views.admin.activity.update_activity_status),
+    
+    
+    
     # 前台管理api
     path('index/classification/list', views.index.classification.list_api),
     path('index/tag/list', views.index.tag.list_api),
@@ -99,5 +103,6 @@ urlpatterns = [
     path('index/address/update', views.index.address.update),
     path('index/address/delete', views.index.address.delete),
 
-   
+    path('index/activities', views.index.activity.activity_list),
+
 ]

@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class User(models.Model):
@@ -85,7 +86,7 @@ class Thing(models.Model):
     collect_count = models.IntegerField(default=0)
 
     class Meta:
-            db_table = "b_thing"
+        db_table = "b_thing"
 
 
 class Comment(models.Model):
@@ -219,3 +220,5 @@ class Address(models.Model):
 
     class Meta:
         db_table = "b_address"
+
+

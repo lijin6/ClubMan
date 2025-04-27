@@ -4,7 +4,7 @@
     <div class="page-view">
       <div class="table-operations">
         <a-space>
-<!--          <a-button type="primary" @click="handleAdd">模拟新增</a-button>-->
+          <!--          <a-button type="primary" @click="handleAdd">模拟新增</a-button>-->
           <a-button @click="handleBatchDelete">批量删除</a-button>
         </a-space>
       </div>
